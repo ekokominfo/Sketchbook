@@ -1,0 +1,24 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+const bundle = JSON.parse(fs.readFileSync('source-bundle.json', 'utf8'));
+const write = (p,s) => { fs.mkdirSync(path.dirname(p),{recursive:true}); fs.writeFileSync(p,s); };
+for (const f of bundle.files) if(f.code) write(f.path,f.code);
+let html = fs.readFileSync('authored.html','utf8');
+write('reference/meng-to-sketchbook.remote.html',html);
+const assetBase = 'https://ublctyddhtbgaersvxxb.supabase.co/storage/v1/object/public/threeui-media/scene-images/';
+await Promise.all(bundle.assets.map(async a => {
+  const name = path.basename(a.path);
+  let url = assetBase+'339abd2c649a11f725af9114/'+name;
+  if(name === 'newsreader.woff2') url = assetBase+'dcec2e68141a33903e3b6cc1/'+name;
+  if(name.startsWith('instrument-serif')) url = assetBase+'embedded/'+a.sha256+'.woff2';
+  const response = await fetch(url);
+  if(!response.ok) throw Error(url+': '+response.status);
+  const data = Buffer.from(await response.arrayBuffer());
+  if(crypto.createHash('sha256').update(data).digest('hex') !== a.sha256) throw Error('Asset hash mismatch: '+name);
+  write(a.path,data);
+  html = html.replaceAll(url, 'meng-to-sketchbook/'+name);
+}));
+write('public/landing-pages/meng-to-sketchbook.html',html);
+write('reference/asset-manifest.json',JSON.stringify(bundle.assets,null,2));
+console.log('Downloaded and verified all 17 assets; localized HTML.');
