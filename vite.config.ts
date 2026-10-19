@@ -1,2 +1,2 @@
 import { defineConfig } from 'vite';
-export default defineConfig({ esbuild: { jsx: 'automatic' } });
+export default defineConfig({ base: '/Sketchbook/', esbuild: { jsx: 'automatic' }, optimizeDeps: { entries: ['index.html'] } });
